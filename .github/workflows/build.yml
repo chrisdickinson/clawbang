@@ -45,7 +45,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - run: |
-          bin/buildjs.sh
           cargo build --release
       - run: tar cfz clawbang_x64_linux.tar.gz -C target/release clawbang
       - name: upload x64 linux gnu release
@@ -77,7 +76,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - run: |
-          bin/buildjs.sh
           cargo build --release
       - run: tar cfz clawbang_x64_darwin.tar.gz -C target/release clawbang
       - name: upload darwin release
@@ -92,6 +90,7 @@ jobs:
 
       - run: rustup target install aarch64-apple-darwin
       - run: cargo build --target aarch64-apple-darwin --release
+      - run: tar cfz clawbang_aarch64_darwin.tar.gz -C target/release clawbang
       - name: upload darwin m1 release
         uses: actions/upload-release-asset@v1
         env:
