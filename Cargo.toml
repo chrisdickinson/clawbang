@@ -2,6 +2,10 @@
 name = "clawbang"
 version = "0.1.0"
 edition = "2021"
+description = "A shebang executable to let you embed rust in bash or standalone files"
+license = "MIT"
+homepage = "https://github.com/chrisdickinson/clawbang"
+repository = "https://github.com/chrisdickinson/clawbang"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
