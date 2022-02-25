@@ -1,0 +1,103 @@
+name: Build CLI
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: create a github release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Clawbang ${{ github.ref }}
+          draft: true
+          prerelease: false
+
+  linux:
+    name: linux gnulibc build
+    runs-on: ubuntu-latest
+    needs: [release]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - run: |
+          bin/buildjs.sh
+          cargo build --release
+      - run: tar cfz clawbang_x64_linux.tar.gz -C target/release clawbang
+      - name: upload x64 linux gnu release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{needs.release.outputs.upload_url}}
+          asset_path: ./clawbang_x64_linux.tar.gz
+          asset_name: clawbang_x64_linux.tar.gz
+          asset_content_type: application/gzip
+
+  darwin:
+    name: darwin
+    runs-on: macos-latest
+    needs: [release]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - run: |
+          bin/buildjs.sh
+          cargo build --release
+      - run: tar cfz clawbang_x64_darwin.tar.gz -C target/release clawbang
+      - name: upload darwin release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{needs.release.outputs.upload_url}}
+          asset_path: ./clawbang_x64_darwin.tar.gz
+          asset_name: clawbang_x64_darwin.tar.gz
+          asset_content_type: application/gzip
+
+      - run: rustup target install aarch64-apple-darwin
+      - run: cargo build --target aarch64-apple-darwin --release
+      - name: upload darwin m1 release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{needs.release.outputs.upload_url}}
+          asset_path: ./clawbang_aarch64_darwin.tar.gz
+          asset_name: clawbang_aarch64_darwin.tar.gz
+          asset_content_type: application/gzip
